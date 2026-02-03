@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Admin {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password_hash String
+  createdAt     DateTime @default(now())
+}
+
+model Job {
+  id                  String        @id @default(uuid())
+  title               String
+  description         String
+  whoWeAreLookingFor  String
+  howToApply          String
+  location            String
+  salary              String?
+  status              String        @default("active") // active, closed
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  applications        Application[]
+}
+
+model Application {
+  id          String   @id @default(uuid())
+  jobId       String
+  job         Job      @relation(fields: [jobId], references: [id])
+  fullName    String
+  email       String
+  phone       String
+  linkedIn    String
+  resume      String
+  coverLetter String?
+  status      String   @default("pending") // pending, reviewed, accepted, rejected
+  appliedAt   DateTime @default(now())
+}

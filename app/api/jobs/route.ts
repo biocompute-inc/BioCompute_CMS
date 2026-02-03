@@ -1,0 +1,23 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+// GET - List active jobs (public endpoint)
+export async function GET() {
+    try {
+        const jobs = await prisma.job.findMany({
+            where: { status: "active" },
+            orderBy: { createdAt: "desc" },
+            select: {
+                id: true,
+                title: true,
+                description: true,
+                location: true,
+                salary: true,
+                createdAt: true,
+            }
+        });
+        return NextResponse.json(jobs);
+    } catch (error) {
+        return NextResponse.json({ error: "Failed to fetch jobs" }, { status: 500 });
+    }
+}
