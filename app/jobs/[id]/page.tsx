@@ -11,6 +11,7 @@ interface Job {
     howToApply: string;
     location: string;
     salary: string | null;
+    type: string;
     createdAt: string;
 }
 
@@ -107,6 +108,11 @@ export default function JobDetailPage() {
                     <p className="mt-2 text-gray-600">
                         {job.location} {job.salary && `• ${job.salary}`}
                     </p>
+                    <div className="mt-2">
+                        <span className={`inline-block rounded px-3 py-1 text-sm font-medium ${job.type === 'full-time' ? 'bg-purple-100 text-purple-800' : 'bg-orange-100 text-orange-800'}`}>
+                            {job.type === 'full-time' ? 'Full-time' : 'Part-time'}
+                        </span>
+                    </div>
 
                     <div className="mt-6 space-y-6">
                         <div>
@@ -135,7 +141,7 @@ export default function JobDetailPage() {
                                 Application submitted successfully!
                             </p>
                             <p className="mt-2 text-green-700">
-                                We'll review your application and get back to you soon.
+                                We&apos;ll review your application and get back to you soon.
                             </p>
                             <button
                                 onClick={() => router.push("/jobs")}

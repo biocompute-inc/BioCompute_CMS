@@ -155,7 +155,7 @@ export default function DummyApplicationPage() {
                                 Application submitted successfully!
                             </p>
                             <p className="mt-2 text-green-700">
-                                We'll review your application and get back to you soon.
+                                We&apos;ll review your application and get back to you soon.
                             </p>
                             <button
                                 onClick={() => router.push("/jobs")}

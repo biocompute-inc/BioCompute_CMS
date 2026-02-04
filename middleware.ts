@@ -27,7 +27,7 @@ function checkRateLimit(ip: string, path: string, maxRequests: number, windowMs:
 }
 
 export function middleware(request: NextRequest) {
-    const ip = request.ip || request.headers.get("x-forwarded-for") || "unknown";
+    const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
     const path = request.nextUrl.pathname;
 
     // Rate limiting for API routes

@@ -15,6 +15,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
                 howToApply: true,
                 location: true,
                 salary: true,
+                type: true,
                 createdAt: true,
             }
         });
@@ -24,7 +25,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         }
 
         return NextResponse.json(job);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Failed to fetch job" }, { status: 500 });
     }
 }

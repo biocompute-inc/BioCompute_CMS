@@ -9,6 +9,7 @@ interface Job {
     description: string;
     location: string;
     salary: string | null;
+    type: string;
     createdAt: string;
 }
 
@@ -63,6 +64,11 @@ export default function JobsPage() {
                             <p className="mt-2 text-sm text-gray-500">
                                 {job.location} {job.salary && `• ${job.salary}`}
                             </p>
+                            <div className="mt-2">
+                                <span className={`inline-block rounded px-2 py-1 text-xs font-medium ${job.type === 'full-time' ? 'bg-purple-100 text-purple-800' : 'bg-orange-100 text-orange-800'}`}>
+                                    {job.type === 'full-time' ? 'Full-time' : 'Part-time'}
+                                </span>
+                            </div>
                             <p className="mt-3 text-gray-700 line-clamp-2">{job.description}</p>
                             <p className="mt-4 text-sm font-medium text-blue-600">
                                 View details and apply →

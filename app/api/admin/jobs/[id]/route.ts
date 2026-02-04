@@ -12,7 +12,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     try {
         const { id } = await params;
         const body = await req.json();
-        const { title, description, whoWeAreLookingFor, howToApply, location, salary, status } = body;
+        const { title, description, whoWeAreLookingFor, howToApply, location, salary, type, status } = body;
 
         const job = await prisma.job.update({
             where: { id },
@@ -23,13 +23,15 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                 howToApply,
                 location,
                 salary,
+                type: type || "full-time",
                 status,
             },
         });
 
         return NextResponse.json(job);
     } catch (error) {
-        return NextResponse.json({ error: "Failed to update job" }, { status: 500 });
+        console.error("Error updating job:", error);
+        return NextResponse.json({ error: "Failed to update job", details: error instanceof Error ? error.message : "Unknown error" }, { status: 500 });
     }
 }
 
@@ -47,7 +49,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
         });
 
         return NextResponse.json({ success: true });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Failed to delete job" }, { status: 500 });
     }
 }

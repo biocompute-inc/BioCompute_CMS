@@ -33,7 +33,7 @@ export async function POST(req: Request) {
         });
 
         return NextResponse.json(application, { status: 201 });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Failed to submit application" }, { status: 500 });
     }
 }

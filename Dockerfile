@@ -17,7 +17,7 @@ COPY . .
 RUN npx prisma generate
 
 # Build the application
-RUN npm run build
+RUN npm run build 
 
 # Production stage
 FROM node:20-alpine AS runner
@@ -43,7 +43,7 @@ ENV NODE_ENV=production
 ENV PORT=3000
 
 # Expose the port
-EXPOSE 3000
+EXPOSE 8000
 
 # Start the application
 CMD ["npm", "start"]

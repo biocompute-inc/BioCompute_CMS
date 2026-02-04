@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/middleware";
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
     const auth = await requireAuth();
     if (!auth) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

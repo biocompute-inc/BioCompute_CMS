@@ -19,7 +19,7 @@ export async function GET() {
             }
         });
         return NextResponse.json(jobs);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Failed to fetch jobs" }, { status: 500 });
     }
 }
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json();
-        const { title, description, whoWeAreLookingFor, howToApply, location, salary } = body;
+        const { title, description, whoWeAreLookingFor, howToApply, location, salary, type, status } = body;
 
         if (!title || !description || !whoWeAreLookingFor || !howToApply || !location) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -47,11 +47,13 @@ export async function POST(req: Request) {
                 howToApply,
                 location,
                 salary: salary || null,
+                type: type || "full-time",
+                status: status || "active",
             },
         });
 
         return NextResponse.json(job, { status: 201 });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Failed to create job" }, { status: 500 });
     }
 }
