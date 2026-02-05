@@ -2,7 +2,8 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: job_board_db
+    container_name: biocompute_postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: mypassword
@@ -11,6 +12,13 @@ services:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - biocompute_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myuser -d jobportal"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 # Next.js Application
   app:
@@ -20,21 +28,17 @@ services:
     container_name: biocompute_app
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8001:3000"
     environment:
       - DATABASE_URL=postgresql://myuser:mypassword@postgres:5432/jobportal?schema=public
       - JWT_SECRET=${JWT_SECRET:-6E4257C1266AEA121EB47DEB16961DA6}
       - NODE_ENV=production
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - biocompute_network
-    command: >
-      sh -c "
-        npx prisma migrate deploy &&
-        npx prisma db seed &&
-        npm start
-      "
+    command: npm start
 
 networks:
   biocompute_network:
