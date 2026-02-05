@@ -28,8 +28,8 @@ export default function AdminLogin() {
                 const data = await res.json();
                 setError(data.error || 'Login failed');
             }
-        } catch {
-            setError('Something went wrong.');
+        } catch (e) {
+            setError(`Something went wrong. Error: ${e}`);
         }
     };
 
