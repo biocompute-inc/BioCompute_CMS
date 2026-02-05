@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 // GET - List active jobs (public endpoint)
 export async function GET() {
     try {
+
         const jobs = await prisma.job.findMany({
             where: { status: "active" },
             orderBy: { createdAt: "desc" },
@@ -18,7 +19,7 @@ export async function GET() {
             }
         });
         return NextResponse.json(jobs);
-    } catch {
-        return NextResponse.json({ error: "Failed to fetch jobs" }, { status: 500 });
+    } catch (e) {
+        return NextResponse.json({ error: `Failed to fetch jobs: ${e}` }, { status: 500 });
     }
 }
