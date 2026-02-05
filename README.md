@@ -83,7 +83,7 @@ npm run dev
 Create `.env.production` for production deployment:
 
 ```env
-DATABASE_URL=postgresql://user:password@host:5432/jobportal?schema=public
+NEON_URL=postgresql://user:password@host:5432/jobportal?schema=public
 JWT_SECRET=your-secure-secret-key-min-32-chars
 NODE_ENV=production
 ```

@@ -15,8 +15,8 @@
 3. **Configure environment:**
    ```bash
    # Copy and edit .env file
-   DATABASE_URL="postgres://user:pass@ep-xxx-pooler.neon.tech/neondb?sslmode=require"
-   DIRECT_URL="postgres://user:pass@ep-xxx.neon.tech/neondb?sslmode=require"
+   NEON_URL="postgres://user:pass@ep-xxx-pooler.neon.tech/neondb?sslmode=require"
+   DIRECT_NEON_URL="postgres://user:pass@ep-xxx.neon.tech/neondb?sslmode=require"
    JWT_SECRET="generate-with-openssl-rand-hex-32"
    ```
 

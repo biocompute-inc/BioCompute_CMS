@@ -73,7 +73,7 @@ Content-Type: application/json
 ### Environment Variables
 
 Update `.env.production` or docker-compose.yml for production:
-- `DATABASE_URL`: PostgreSQL connection string
+- `NEON_URL`: PostgreSQL connection string
 - `JWT_SECRET`: Secret key for JWT tokens (generate a new one!)
 - `NODE_ENV`: Set to "production"
 

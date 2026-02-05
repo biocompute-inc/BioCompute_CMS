@@ -6,8 +6,8 @@
         "iad1"
     ],
     "env": {
-        "DATABASE_URL": "@database_url",
-        "DIRECT_URL": "@direct_url",
+        "NEON_URL": "@database_url",
+        "DIRECT_NEON_URL": "@direct_url",
         "JWT_SECRET": "@jwt_secret"
     }
 }
