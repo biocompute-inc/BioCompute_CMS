@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, ensureConnection } from "@/lib/prisma";
 import { requireAuth } from "@/lib/middleware";
 
 // GET - Get all comments for an application
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+    await ensureConnection();
     const auth = await requireAuth();
     if (!auth) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -24,6 +25,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
 // POST - Add a comment to an application
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+    await ensureConnection();
     const auth = await requireAuth();
     if (!auth) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

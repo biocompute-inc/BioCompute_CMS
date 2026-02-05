@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, ensureConnection } from "@/lib/prisma";
 import { requireAuth } from "@/lib/middleware";
 
 // PUT - Update application status
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+    await ensureConnection();
     const auth = await requireAuth();
     if (!auth) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

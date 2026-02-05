@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, ensureConnection } from "@/lib/prisma";
 import { comparePassword, signJWT } from "@/lib/auth";
 
 export async function POST(req: Request) {
+    await ensureConnection();
     try {
         const { email, password } = await req.json();
 

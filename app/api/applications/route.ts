@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, ensureConnection } from "@/lib/prisma";
 
 // POST - Submit application (public endpoint)
 export async function POST(req: Request) {
+    await ensureConnection();
     try {
         const body = await req.json();
         const { jobId, fullName, email, phone, linkedIn, resume, coverLetter } = body;

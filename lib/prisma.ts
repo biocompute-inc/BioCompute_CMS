@@ -15,3 +15,14 @@ const createPrismaClient = () => {
 export const prisma = globalForPrisma.prisma || createPrismaClient();
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+
+export async function ensureConnection() {
+    try {
+        await prisma.$connect();
+    } catch (e) {
+        console.log("⚠️ Database sleeping? Retrying connection...");
+        // Wait 2 seconds and try once more
+        await new Promise(res => setTimeout(res, 2000));
+        await prisma.$connect();
+    }
+}

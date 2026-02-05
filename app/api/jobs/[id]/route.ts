@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, ensureConnection } from "@/lib/prisma";
 
 // GET - Get single job (public endpoint)
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+    await ensureConnection();
     try {
         const { id } = await params;
         const job = await prisma.job.findUnique({

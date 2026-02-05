@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, ensureConnection } from "@/lib/prisma";
 
 // GET - List active jobs (public endpoint)
 export async function GET() {
+    await ensureConnection();
     try {
 
         const jobs = await prisma.job.findMany({
