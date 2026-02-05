@@ -6,8 +6,8 @@
         "iad1"
     ],
     "env": {
-        "NEON_URL": "@NEON_URL",
-        "DIRECT_NEON_URL": "@DIRECT_NEON_URL",
-        "JWT_SECRET": "@JWT_SECRET"
+        "NEON_URL": "NEON_URL",
+        "DIRECT_NEON_URL": "DIRECT_NEON_URL",
+        "JWT_SECRET": "JWT_SECRET"
     }
 }
