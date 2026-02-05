@@ -26,7 +26,7 @@ cd BioCompute_Admin_Portal
 The `.env` and `.env.production` files are already configured, but you can customize:
 
 ```env
-NEON_URL="postgresql://myuser:mypassword@localhost:5432/jobportal?schema=public"
+DATABASE_URL="postgresql://myuser:mypassword@localhost:5432/jobportal?schema=public"
 JWT_SECRET="your-secret-key-here"
 ```
 
@@ -123,7 +123,7 @@ services:
     ports:
       - "80:3000"
     environment:
-      - NEON_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
       - JWT_SECRET=${JWT_SECRET}
       - NODE_ENV=production
     depends_on:
@@ -169,7 +169,7 @@ JWT_SECRET=your_generated_secret_key
 4. DigitalOcean auto-detects Dockerfile
 5. Add PostgreSQL database (managed)
 6. Set environment variables:
-   - `NEON_URL` (auto-provided by DO)
+   - `DATABASE_URL` (auto-provided by DO)
    - `JWT_SECRET`
    - `NODE_ENV=production`
 7. Deploy! ✨
@@ -407,7 +407,7 @@ JWT_SECRET=your_generated_secret_key
 ### Environment Variables
 Create `.env.production` on your server:
 ```env
-NEON_URL=postgresql://user:password@host:5432/dbname?schema=public
+DATABASE_URL=postgresql://user:password@host:5432/dbname?schema=public
 JWT_SECRET=your-super-secret-key-min-32-chars
 NODE_ENV=production
 ```

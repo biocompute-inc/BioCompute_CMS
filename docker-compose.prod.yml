@@ -36,7 +36,7 @@ services:
       - "80:3000"  # Map to port 80 for HTTP
       # - "443:3000"  # Uncomment for HTTPS with reverse proxy
     environment:
-      - NEON_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
       - JWT_SECRET=${JWT_SECRET}
       - NODE_ENV=production
     depends_on:

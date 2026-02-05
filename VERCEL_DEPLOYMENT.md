@@ -63,8 +63,8 @@ In the Vercel deployment screen, add these environment variables:
 
 | Variable | Value |
 |----------|-------|
-| `NEON_URL` | Your **Pooled Connection** string from Neon |
-| `DIRECT_NEON_URL` | Your **Direct Connection** string from Neon |
+| `DATABASE_URL` | Your **Pooled Connection** string from Neon |
+| `DIRECT_URL` | Your **Direct Connection** string from Neon |
 | `JWT_SECRET` | Generate with: `openssl rand -hex 32` |
 | `NODE_ENV` | `production` |
 
@@ -171,8 +171,8 @@ Vercel auto-deploys in 2-3 minutes! 🚀
 
 ### Database Connection Errors
 - Check environment variables in Vercel dashboard
-- Ensure you used the **Pooled** connection for `NEON_URL`
-- Ensure you used the **Direct** connection for `DIRECT_NEON_URL`
+- Ensure you used the **Pooled** connection for `DATABASE_URL`
+- Ensure you used the **Direct** connection for `DIRECT_URL`
 
 ### Migrations Not Applied
 ```bash
