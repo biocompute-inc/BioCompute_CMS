@@ -4,10 +4,20 @@ import { PrismaPg } from '@prisma/adapter-pg';
 
 const connectionString = process.env.DATABASE_URL;
 
+// 1. Validation to prevent the "at base" error
+if (!connectionString) {
+    throw new Error("DATABASE_URL is not defined in environment variables");
+}
+
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
 const createPrismaClient = () => {
-    const pool = new Pool({ connectionString });
+    // 2. Add a connection timeout to the pool itself
+    const pool = new Pool({
+        connectionString,
+        connectionTimeoutMillis: 10000, // 10 seconds
+    });
+
     const adapter = new PrismaPg(pool);
     return new PrismaClient({ adapter });
 };
@@ -20,8 +30,7 @@ export async function ensureConnection() {
     try {
         await prisma.$connect();
     } catch (e) {
-        console.log("⚠️ Database sleeping? Retrying connection...");
-        // Wait 2 seconds and try once more
+        console.error("❌ Connection failed, retrying...", e);
         await new Promise(res => setTimeout(res, 2000));
         await prisma.$connect();
     }
