@@ -1,439 +1,587 @@
-# 🚀 BioCompute Admin Portal - Setup & Deployment Guide
+# 🚀 BioCompute Admin Portal - Deployment Guide
 
 ## 📋 Table of Contents
-- [Local Setup](#local-setup)
-- [Docker Deployment](#docker-deployment)
-- [Cloud Deployment Options](#cloud-deployment-options)
-- [Production Considerations](#production-considerations)
-- [Maintenance & Monitoring](#maintenance--monitoring)
+- [Production Deployment (Render + Supabase)](#production-deployment-render--supabase)
+- [Local Development](#local-development)
+- [Environment Variables](#environment-variables)
+- [Database Management](#database-management)
+- [Troubleshooting](#troubleshooting)
 
 ---
 
-## 🏠 Local Setup
+## 🌐 Production Deployment (Render + Supabase)
+
+This is the **recommended** approach for production deployment. It's cost-effective, scalable, and requires minimal DevOps knowledge.
+
+### Prerequisites
+- GitHub account with your code pushed
+- Supabase account: https://supabase.com (FREE tier available)
+- Render account: https://render.com (FREE tier available)
+
+### Step 1: Set Up Supabase Database 🗄️
+
+1. **Create Supabase Project:**
+   - Go to https://supabase.com/dashboard
+   - Click **"New Project"**
+   - Name: `biocompute-portal`
+   - Set a strong database password
+   - Choose region closest to your users
+   - Click **"Create new project"** (takes ~2 minutes)
+
+2. **Get Connection String:**
+   - In your project dashboard, go to **Settings** → **Database**
+   - Find **Connection String** section
+   - Select **"URI"** format
+   - Copy the connection string (looks like):
+     ```
+     postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres
+     ```
+   - Replace `[YOUR-PASSWORD]` with your actual password
+
+3. **Enable Connection Pooler (Recommended):**
+   - In **Settings** → **Database**
+   - Scroll to **Connection Pooling**
+   - Note the pooler connection string for better performance:
+     ```
+     postgresql://postgres:[PASSWORD]@aws-0-us-east-1.pooler.supabase.com:6543/postgres
+     ```
+
+### Step 2: Deploy to Render 🎨
+
+1. **Create Web Service:**
+   - Go to https://dashboard.render.com
+   - Click **"New +"** → **"Web Service"**
+   - Click **"Build and deploy from a Git repository"**
+   - Connect your GitHub account if not already connected
+   - Select your repository: `BioCompute_Admin_Portal`
+   - Click **"Connect"**
+
+2. **Configure Service:**
+   - **Name**: `biocompute-portal` (or your choice)
+   - **Region**: Choose same region as Supabase (or closest)
+   - **Branch**: `main` (or your default branch)
+   - **Root Directory**: Leave blank
+   - **Runtime**: `Node`
+   - **Build Command**: 
+     ```bash
+     npm install && npx prisma generate && npx prisma migrate deploy && npm run build
+     ```
+   - **Start Command**: 
+     ```bash
+     npm start
+     ```
+   - **Instance Type**: 
+     - Free (for testing)
+     - Starter ($7/month - recommended for production)
+
+3. **Add Environment Variables:**
+   Click **"Advanced"** → **"Environment Variables"** and add:
+   
+   | Key | Value |
+   |-----|-------|
+   | `DATABASE_URL` | Your Supabase connection string (with pooler if available) |
+   | `JWT_SECRET` | Generate with command below |
+   | `NODE_ENV` | `production` |
+
+   **Generate JWT Secret:**
+   ```bash
+   # Windows PowerShell
+   [System.Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+   
+   # Linux/Mac/Git Bash
+   openssl rand -hex 32
+   ```
+
+4. **Create Web Service:**
+   - Click **"Create Web Service"**
+   - Render will automatically:
+     - Clone your repository
+     - Install dependencies
+     - Run Prisma migrations
+     - Build Next.js
+     - Deploy your application
+   - This takes 3-5 minutes for first deployment
+
+5. **Initial Setup - Seed Database:**
+   
+   After first deployment, seed the database with initial admin user:
+   
+   **Option A: Using Render Shell**
+   - In your Render dashboard, go to your service
+   - Click **"Shell"** tab
+   - Run:
+     ```bash
+     npm run seed
+     ```
+   
+   **Option B: Using Supabase SQL Editor**
+   - Go to Supabase dashboard → **SQL Editor**
+   - Copy content from `prisma/seed.ts` and convert to SQL
+   - Or manually insert admin user:
+     ```sql
+     INSERT INTO "Admin" (email, password, name, "createdAt", "updatedAt")
+     VALUES (
+       'admin@biocompute.com',
+       '$2a$10$...', -- Use bcrypt to hash 'admin123'
+       'Admin User',
+       NOW(),
+       NOW()
+     );
+     ```
+
+6. **Access Your Application:**
+   - Your app is now live at: `https://biocompute-portal.onrender.com`
+   - Admin panel: `https://biocompute-portal.onrender.com/admin/login`
+   - API: `https://biocompute-portal.onrender.com/api/jobs`
+
+### Step 3: Configure Custom Domain (Optional)
+
+1. In Render dashboard, go to **Settings** → **Custom Domain**
+2. Add your domain (e.g., `portal.biocompute.com`)
+3. Follow DNS instructions provided by Render
+4. SSL is automatically provisioned (free)
+
+### Step 4: Set Up Automatic Deployments
+
+Already configured! Render automatically deploys when you:
+- Push to your main branch
+- Merge a pull request
+- Manually trigger via dashboard
+
+---
+
+## 🏠 Local Development
 
 ### Prerequisites
 - Node.js 20+ installed
-- Docker Desktop installed and running
 - Git installed
+- Supabase account (or local PostgreSQL)
 
-### Step 1: Clone the Repository
-```bash
-git clone <your-repository-url>
-cd BioCompute_Admin_Portal
-```
+### Option 1: With Supabase (Recommended)
 
-### Step 2: Environment Configuration
-The `.env` and `.env.production` files are already configured, but you can customize:
+1. **Clone Repository:**
+   ```bash
+   git clone <your-repository-url>
+   cd BioCompute_Admin_Portal
+   ```
 
-```env
-DATABASE_URL="postgresql://myuser:mypassword@localhost:5432/jobportal?schema=public"
-JWT_SECRET="your-secret-key-here"
-```
+2. **Install Dependencies:**
+   ```bash
+   npm install
+   ```
 
-**⚠️ Important:** For production, generate a strong JWT secret:
+3. **Create Supabase Project:**
+   - Follow Step 1 from Production Deployment
+   - Or use your existing Supabase project
+
+4. **Configure Environment:**
+   Create `.env` file:
+   ```env
+   DATABASE_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres"
+   JWT_SECRET="your-local-secret-key"
+   NODE_ENV="development"
+   ```
+
+5. **Run Migrations:**
+   ```bash
+   npx prisma generate
+   npx prisma migrate deploy
+   npm run seed
+   ```
+
+6. **Start Development Server:**
+   ```bash
+   npm run dev
+   ```
+
+7. **Access Application:**
+   - App: http://localhost:3000
+   - Admin: http://localhost:3000/admin/login
+   - API: http://localhost:3000/api/jobs
+
+---
+
+## 🔐 Environment Variables
+
+### Required Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `DATABASE_URL` | Supabase or PostgreSQL connection string | `postgresql://postgres:pass@...` |
+| `JWT_SECRET` | Secret key for JWT tokens (min 32 chars) | Generated with openssl/PowerShell |
+| `NODE_ENV` | Environment (development/production) | `production` |
+
+### Generate Secure Secrets
+
 ```bash
 # Windows PowerShell
 [System.Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
 
-# Linux/Mac
+# Linux/Mac/Git Bash
 openssl rand -hex 32
+
+# Or online (use carefully):
+# https://generate-secret.now.sh/32
 ```
 
-### Step 3: Install Dependencies
+---
+
+## 🗄️ Database Management
+
+### Using Supabase Dashboard
+
+1. **View Data:**
+   - Go to Supabase Dashboard → **Table Editor**
+   - Browse tables: Admin, Job, Application, ApplicationComment
+
+2. **Run Queries:**
+   - Go to **SQL Editor**
+   - Run custom SQL queries
+   - View query history
+
+3. **Backups:**
+   - Automatic daily backups (on paid plans)
+   - Manual backups via **Database** → **Backups**
+   - Download or restore from backup
+
+4. **Monitoring:**
+   - **Database** → **Performance**
+   - View connection count
+   - Monitor query performance
+   - Check storage usage
+
+### Using Prisma Studio (Local)
+
 ```bash
-npm install
+# Open Prisma Studio
+npx prisma studio
+
+# Access at http://localhost:5555
 ```
 
-### Step 4: Start with Docker
+### Manual Backup and Restore
+
+**Backup from Supabase:**
 ```bash
-# Start both PostgreSQL and the application
-docker-compose -f docker-compose.dev.yml up -d
-
-# View logs
-docker-compose -f docker-compose.dev.yml logs -f
-
-# Stop everything
-docker-compose -f docker-compose.dev.yml down
+pg_dump "postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres" > backup_$(date +%Y%m%d).sql
 ```
 
-### Step 5: Access the Application
-- **Application**: http://localhost:8001
-- **Admin Login**: http://localhost:8001/admin/login
-- **Public Jobs**: http://localhost:8001/jobs
-- **API**: http://localhost:8001/api/jobs
-
----
-
-## 🐳 Docker Deployment
-
-### Using Docker Compose (Recommended)
-
-**Your current setup is perfect for deployment!** The `docker-compose.dev.yml` file manages both PostgreSQL and the Next.js app.
-
-#### Quick Start
+**Restore:**
 ```bash
-# Build and start
-docker-compose -f docker-compose.dev.yml up -d --build
-
-# Check status
-docker-compose -f docker-compose.dev.yml ps
-
-# View logs
-docker-compose -f docker-compose.dev.yml logs -f app
-
-# Stop
-docker-compose -f docker-compose.dev.yml down
-
-# Stop and remove volumes (⚠️ deletes database data)
-docker-compose -f docker-compose.dev.yml down -v
+psql "postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres" < backup.sql
 ```
 
-### Production Docker Compose (Recommended for VPS)
-
-Create `docker-compose.prod.yml`:
-
-```yaml
-version: '3.8'
-services:
-  postgres:
-    image: postgres:15-alpine
-    container_name: biocompute_postgres
-    restart: always
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./backups:/backups
-    networks:
-      - biocompute_network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: biocompute_app
-    restart: always
-    ports:
-      - "80:3000"
-    environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
-      - JWT_SECRET=${JWT_SECRET}
-      - NODE_ENV=production
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - biocompute_network
-    command: npm start
-
-networks:
-  biocompute_network:
-    driver: bridge
-
-volumes:
-  postgres_data:
-```
-
-Create `.env.production`:
-```env
-POSTGRES_USER=your_secure_user
-POSTGRES_PASSWORD=your_secure_password
-POSTGRES_DB=jobportal
-JWT_SECRET=your_generated_secret_key
-```
-
----
-
-## ☁️ Cloud Deployment Options
-
-### Option 1: DigitalOcean App Platform (Easiest) 💎
-
-**Why DigitalOcean:**
-- ✅ Easy Docker Compose deployment
-- ✅ Managed PostgreSQL database
-- ✅ Automatic SSL certificates
-- ✅ $5-10/month for starter apps
-- ✅ One-click deploy from GitHub
-
-**Steps:**
-1. Push your code to GitHub
-2. Go to [DigitalOcean App Platform](https://www.digitalocean.com/products/app-platform)
-3. Click "Create App" → Select GitHub repository
-4. DigitalOcean auto-detects Dockerfile
-5. Add PostgreSQL database (managed)
-6. Set environment variables:
-   - `DATABASE_URL` (auto-provided by DO)
-   - `JWT_SECRET`
-   - `NODE_ENV=production`
-7. Deploy! ✨
-
-**Cost:** ~$12/month ($5 app + $7 database)
-
----
-
-### Option 2: Railway.app (Developer Friendly) 🚂
-
-**Why Railway:**
-- ✅ Free tier available ($5 credit/month)
-- ✅ GitHub integration
-- ✅ One-click PostgreSQL
-- ✅ Automatic SSL
-- ✅ Simple pricing
-
-**Steps:**
-1. Go to [Railway.app](https://railway.app)
-2. Click "New Project" → "Deploy from GitHub"
-3. Select repository
-4. Add PostgreSQL service (one click)
-5. Set environment variables
-6. Deploy automatically
-
-**Cost:** Pay-as-you-go (~$5-15/month)
-
----
-
-### Option 3: AWS EC2 + Docker (Full Control) 🏢
-
-**Why AWS:**
-- ✅ Industry standard
-- ✅ Full control
-- ✅ Scalable
-- ✅ Free tier available (12 months)
-
-**Steps:**
-
-1. **Launch EC2 Instance**
-   - Ubuntu Server 22.04 LTS
-   - t2.micro (free tier) or t3.small
-   - Security Group: Open ports 22 (SSH), 80 (HTTP), 443 (HTTPS)
-
-2. **SSH into Server**
-   ```bash
-   ssh -i your-key.pem ubuntu@your-ec2-ip
-   ```
-
-3. **Install Docker**
-   ```bash
-   # Update system
-   sudo apt update && sudo apt upgrade -y
-
-   # Install Docker
-   curl -fsSL https://get.docker.com -o get-docker.sh
-   sudo sh get-docker.sh
-   sudo usermod -aG docker ubuntu
-
-   # Install Docker Compose
-   sudo apt install docker-compose -y
-
-   # Verify
-   docker --version
-   docker-compose --version
-   ```
-
-4. **Clone Repository**
-   ```bash
-   git clone <your-repo-url>
-   cd BioCompute_Admin_Portal
-   ```
-
-5. **Configure Environment**
-   ```bash
-   nano .env.production
-   # Add your production variables
-   ```
-
-6. **Deploy**
-   ```bash
-   docker-compose -f docker-compose.prod.yml up -d --build
-   ```
-
-7. **Setup Nginx (Optional but Recommended)**
-   ```bash
-   sudo apt install nginx -y
-   sudo nano /etc/nginx/sites-available/biocompute
-   ```
-
-   Add:
-   ```nginx
-   server {
-       listen 80;
-       server_name your-domain.com;
-
-       location / {
-           proxy_pass http://localhost:8001;
-           proxy_http_version 1.1;
-           proxy_set_header Upgrade $http_upgrade;
-           proxy_set_header Connection 'upgrade';
-           proxy_set_header Host $host;
-           proxy_cache_bypass $http_upgrade;
-       }
-   }
-   ```
-
-   Enable:
-   ```bash
-   sudo ln -s /etc/nginx/sites-available/biocompute /etc/nginx/sites-enabled/
-   sudo nginx -t
-   sudo systemctl restart nginx
-   ```
-
-8. **Setup SSL with Let's Encrypt**
-   ```bash
-   sudo apt install certbot python3-certbot-nginx -y
-   sudo certbot --nginx -d your-domain.com
-   ```
-
-**Cost:** 
-- Free tier: $0/month (12 months)
-- After: ~$10-20/month (t3.small)
-
----
-
-### Option 4: Azure Container Instances 🔷
-
-**Steps:**
-1. Install Azure CLI
-2. Login: `az login`
-3. Create resource group:
-   ```bash
-   az group create --name biocompute-rg --location eastus
-   ```
-4. Deploy:
-   ```bash
-   az container create \
-     --resource-group biocompute-rg \
-     --name biocompute-app \
-     --image your-docker-image \
-     --dns-name-label biocompute \
-     --ports 80
-   ```
-
-**Cost:** ~$15-30/month
-
----
-
-### Option 5: Google Cloud Run 🌐
-
-**Why Cloud Run:**
-- ✅ Serverless (pay only when used)
-- ✅ Auto-scaling
-- ✅ Generous free tier
-- ✅ Built-in SSL
-
-**Steps:**
-1. Install Google Cloud SDK
-2. Build and push image:
-   ```bash
-   gcloud builds submit --tag gcr.io/PROJECT_ID/biocompute-app
-   ```
-3. Deploy:
-   ```bash
-   gcloud run deploy biocompute-app \
-     --image gcr.io/PROJECT_ID/biocompute-app \
-     --platform managed \
-     --region us-central1 \
-     --allow-unauthenticated
-   ```
-4. Add Cloud SQL PostgreSQL database
-
-**Cost:** Free tier up to 2M requests/month, then pay-per-use
-
----
-
-### Option 6: Render.com (Simple & Modern) 🎨
-
-**Why Render:**
-- ✅ Free tier available
-- ✅ Automatic SSL
-- ✅ GitHub auto-deploy
-- ✅ Managed PostgreSQL
-
-**Steps:**
-1. Go to [Render.com](https://render.com)
-2. Connect GitHub repository
-3. Create PostgreSQL database
-4. Create Web Service (auto-detects Dockerfile)
-5. Set environment variables
-6. Deploy!
-
-**Cost:** 
-- Free tier: $0/month (with limitations)
-- Paid: $7/month (web) + $7/month (database)
-
----
-
-## 🎯 Recommended Setup for Your Use Case
-
-### For Development/Testing:
-**Use:** Local Docker Compose
-- **Command:** `docker-compose -f docker-compose.dev.yml up -d`
-- **Cost:** Free
-- **Pros:** Full control, instant feedback
-
-### For Small-Scale Production (Best Option):
-**Use:** Railway.app or DigitalOcean App Platform
-- **Why:** Simple, affordable, managed database
-- **Cost:** $10-15/month
-- **Setup Time:** 10 minutes
-- **Maintenance:** Minimal
-
-### For Enterprise/Large-Scale:
-**Use:** AWS EC2 + RDS or Google Cloud
-- **Why:** Scalability, full control
-- **Cost:** $50-200+/month
-- **Setup Time:** 1-2 hours
-- **Maintenance:** Regular
-
----
-
-## 🔒 Production Considerations
-
-### Security Checklist
-- [ ] Change default database credentials
-- [ ] Generate strong JWT_SECRET
-- [ ] Enable HTTPS/SSL
-- [ ] Set up firewall rules
-- [ ] Regular security updates
-- [ ] Enable database backups
-- [ ] Use environment variables (never commit secrets)
-
-### Environment Variables
-Create `.env.production` on your server:
-```env
-DATABASE_URL=postgresql://user:password@host:5432/dbname?schema=public
-JWT_SECRET=your-super-secret-key-min-32-chars
-NODE_ENV=production
-```
-
-### Database Backups
+**Automated Daily Backups (for self-hosted PostgreSQL):**
+If you're running your own PostgreSQL server, set up automated backups with cron:
 ```bash
-# Backup
-docker exec biocompute_postgres pg_dump -U myuser jobportal > backup_$(date +%Y%m%d).sql
+# Edit crontab
+crontab -e
 
-# Restore
-docker exec -i biocompute_postgres psql -U myuser jobportal < backup_20260204.sql
-
-# Automated daily backup (crontab)
-0 2 * * * docker exec biocompute_postgres pg_dump -U myuser jobportal > /backups/backup_$(date +\%Y\%m\%d).sql
+# Add daily backup at 2 AM
+0 2 * * * pg_dump "postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres" > /backups/backup_$(date +\%Y\%m\%d).sql
 ```
 
 ---
 
-## 🔄 CI/CD Pipeline (Optional)
+## 🔄 Database Migrations
 
-### GitHub Actions Deployment
+### Creating New Migrations
+
+```bash
+# Create a new migration
+npx prisma migrate dev --name add_new_field
+
+# This will:
+# 1. Generate migration SQL
+# 2. Apply to database
+# 3. Regenerate Prisma Client
+```
+
+### Deploying Migrations (Production)
+
+```bash
+# Deploy pending migrations
+npx prisma migrate deploy
+
+# Reset database (⚠️ DESTRUCTIVE - deletes all data)
+npx prisma migrate reset
+```
+
+### On Render:
+Migrations run automatically during deployment via build command:
+```bash
+npx prisma migrate deploy
+```
+
+---
+
+## 📊 Monitoring & Maintenance
+
+### Render Dashboard
+
+**Application Logs:**
+- View real-time logs in Render dashboard
+- Search and filter logs
+- Download logs for analysis
+
+**Monitoring:**
+- CPU and memory usage
+- Request count and latency
+- Deploy history
+- Custom domains and SSL status
+
+**Auto-Deploy:**
+- Automatic deployments on git push
+- Manual deploy button for rollbacks
+- Deploy hooks for CI/CD
+
+### Supabase Dashboard
+
+**Database Monitoring:**
+- Connection pooler stats
+- Active connections
+- Storage usage
+- API requests
+
+**Query Performance:**
+- Slow query log
+- Query analyzer
+- Index suggestions
+
+**Logs:**
+- PostgreSQL logs
+- API logs
+- Auth logs (if using Supabase Auth)
+
+### Health Check
+
+Your app includes a health check endpoint:
+```bash
+curl https://your-app.onrender.com/api/health
+```
+
+Response:
+```json
+{
+  "status": "healthy",
+  "service": "BioCompute Admin Portal",
+  "timestamp": "2026-02-06T12:00:00.000Z"
+}
+```
+
+---
+
+## 🔒 Security Best Practices
+
+### Required for Production
+
+- [ ] **Change default admin credentials** (email/password in seed.ts)
+- [ ] **Generate strong JWT_SECRET** (minimum 32 characters)
+- [ ] **Use HTTPS/SSL** (automatic on Render, manual for self-hosted)
+- [ ] **Enable Render's deploy protection** (prevent accidental deploys)
+- [ ] **Set up Supabase IP restrictions** (if needed)
+- [ ] **Regular security updates** (dependencies and packages)
+- [ ] **Environment variables** (never commit secrets to git)
+- [ ] **Enable database backups** (automatic on Supabase paid plans)
+
+### Additional Security Measures
+
+- Enable rate limiting (implement with `express-rate-limit`)
+- Use strong passwords for database and admin accounts
+- Regularly audit application logs
+- Keep dependencies updated: `npm audit fix`
+- Enable Supabase Row Level Security (RLS) if needed
+- Use Render's persistent disk for file uploads (if needed)
+- Set up monitoring and alerts
+
+- Set up monitoring and alerts
+
+---
+
+## 🐛 Troubleshooting
+
+### Render Deployment Issues
+
+**Build Fails:**
+```bash
+# Check build logs in Render dashboard
+# Common issues:
+# 1. Missing environment variables
+# 2. Prisma generation failure
+# 3. Database connection during build
+
+# Solution: Ensure build command includes:
+npm install && npx prisma generate && npx prisma migrate deploy && npm run build
+```
+
+**Application Won't Start:**
+- Check environment variables are set correctly
+- Verify DATABASE_URL format and credentials
+- Check start command: `npm start`
+- Review application logs in Render dashboard
+
+**Database Connection Errors:**
+- Verify Supabase project is active
+- Check connection string is correct (including password)
+- Ensure SSL mode: `?sslmode=require` or use pooler connection
+- Test connection locally first
+
+**502 Bad Gateway:**
+- Application might be crashing on startup
+- Check logs for errors
+- Verify Next.js build completed successfully
+- Check if port 3000 is exposed in application
+
+### Supabase Issues
+
+**Connection Timeout:**
+```bash
+# Check if connection pooler is enabled
+# Use pooler connection string instead:
+postgresql://postgres:[PASSWORD]@aws-0-us-east-1.pooler.supabase.com:6543/postgres
+```
+
+**Too Many Connections:**
+- Enable connection pooling in Supabase
+- Use Prisma connection pool settings:
+  ```prisma
+  datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+    connectionLimit = 10
+  }
+  ```
+
+**Migration Errors:**
+```bash
+# Reset migrations (⚠️ local only, destructive)
+npx prisma migrate reset
+
+# Force deploy migrations
+npx prisma migrate deploy --force
+
+# Generate Prisma Client
+npx prisma generate
+```
+
+### Common Application Issues
+
+**Prisma Client Not Generated:**
+```bash
+npx prisma generate
+```
+
+**Admin Login Not Working:**
+```bash
+# Verify admin user exists
+npx prisma studio
+# Or check via Supabase SQL Editor
+
+# Reset admin password
+npm run seed
+```
+
+**CORS Errors:**
+- Check API route handlers have proper CORS headers
+- Verify origin is allowed in API responses
+
+---
+
+## 🚀 Performance Optimization
+
+### For Render + Supabase
+
+1. **Use Connection Pooling:**
+   - Enable Supabase connection pooler
+   - Use pooler connection string in production
+
+2. **Optimize Database Queries:**
+   - Add indexes for frequently queried fields (already in schema)
+   - Use Prisma's query optimization features
+   - Monitor slow queries in Supabase dashboard
+
+3. **Enable Caching:**
+   - Implement Next.js caching strategies
+   - Use Supabase's built-in caching
+
+4. **Choose Right Instance:**
+   - Render Starter ($7/month) for production workloads
+   - Free tier for testing only (spins down after inactivity)
+
+5. **Same Region:**
+   - Deploy Render service in same region as Supabase project
+   - Reduces latency significantly
+
+### Next.js Optimizations
+
+```typescript
+// In next.config.ts
+const nextConfig = {
+  output: 'standalone',
+  compress: true,
+  poweredByHeader: false,
+  // Add other optimizations
+}
+```
+
+---
+
+## 📈 Scaling Considerations
+
+### When to Scale Up
+
+**Signs you need to upgrade:**
+- Response times > 2 seconds consistently
+- CPU usage > 80% regularly
+- Memory usage approaching limit
+- Database connection pool exhausted
+
+### Scaling Options
+
+**Vertical Scaling (Render):**
+- Upgrade to higher instance type
+- Standard ($25/month) - 1 GB RAM
+- Pro ($85/month) - 4 GB RAM
+
+**Horizontal Scaling:**
+- Multiple Render instances (load balanced automatically)
+- Supabase automatically scales database
+
+**Database Scaling (Supabase):**
+- Free tier: Up to 500MB, 2 GB data transfer
+- Pro tier: 8GB database, 50GB transfer ($25/month)
+- Team/Enterprise: Custom scaling options
+
+---
+
+## 🔄 CI/CD Setup (Advanced)
+
+### Automatic Deploy from GitHub
+
+Render automatically deploys when you push to main branch. To customize:
+
+1. Go to Render Dashboard → Settings
+2. Configure auto-deploy settings
+3. Set deploy hooks for specific branches
+4. Add deploy notifications (Slack, Discord, etc.)
+
+### Manual Deploy Hooks
+
+Generate a deploy hook URL:
+```bash
+# In Render dashboard: Settings → Deploy Hook
+# Copy the webhook URL
+
+# Trigger deploy via curl:
+curl -X POST https://api.render.com/deploy/srv-xxxxx?key=xxxxx
+```
+
+### GitHub Actions (Optional)
 
 Create `.github/workflows/deploy.yml`:
 
 ```yaml
-name: Deploy to Production
+name: Deploy to Render
 
 on:
   push:
@@ -443,98 +591,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Deploy to server
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ubuntu
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd BioCompute_Admin_Portal
-            git pull origin main
-            docker-compose -f docker-compose.prod.yml down
-            docker-compose -f docker-compose.prod.yml up -d --build
-```
-
----
-
-## 📊 Maintenance & Monitoring
-
-### Check Logs
-```bash
-# Application logs
-docker-compose -f docker-compose.dev.yml logs -f app
-
-# Database logs
-docker-compose -f docker-compose.dev.yml logs -f postgres
-
-# Last 100 lines
-docker-compose -f docker-compose.dev.yml logs --tail=100
-```
-
-### Monitor Resources
-```bash
-# Container stats
-docker stats
-
-# Disk usage
-docker system df
-
-# Clean up
-docker system prune -a
-```
-
-### Update Application
-```bash
-# Pull latest code
-git pull origin main
-
-# Rebuild and restart
-docker-compose -f docker-compose.dev.yml up -d --build
-
-# Or rebuild specific service
-docker-compose -f docker-compose.dev.yml up -d --build app
-```
-
----
-
-## 🆘 Troubleshooting
-
-### Container won't start
-```bash
-# Check logs
-docker-compose -f docker-compose.dev.yml logs app
-
-# Restart
-docker-compose -f docker-compose.dev.yml restart app
-
-# Rebuild from scratch
-docker-compose -f docker-compose.dev.yml down
-docker-compose -f docker-compose.dev.yml up -d --build
-```
-
-### Database connection issues
-```bash
-# Check if database is healthy
-docker-compose -f docker-compose.dev.yml ps
-
-# Test connection
-docker exec -it biocompute_postgres psql -U myuser -d jobportal -c "SELECT 1;"
-```
-
-### Port already in use
-```bash
-# Find process using port 8001
-netstat -ano | findstr :8001
-
-# Kill process (Windows PowerShell)
-Stop-Process -Id <PID> -Force
-
-# Or change port in docker-compose.dev.yml
-ports:
-  - "8002:3000"  # Use different port
+      - name: Trigger Render Deploy
+        run: |
+          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
 ```
 
 ---
@@ -542,63 +601,165 @@ ports:
 ## 📞 Quick Reference
 
 ### Essential Commands
+
 ```bash
-# Start everything
-docker-compose -f docker-compose.dev.yml up -d
+# Local Development
+npm run dev              # Start dev server
+npm run build           # Build for production
+npm start               # Start production server
+npm run lint            # Lint code
+npm run seed            # Seed database
 
-# Stop everything
-docker-compose -f docker-compose.dev.yml down
-
-# View logs
-docker-compose -f docker-compose.dev.yml logs -f
-
-# Restart application
-docker-compose -f docker-compose.dev.yml restart app
-
-# Rebuild
-docker-compose -f docker-compose.dev.yml up -d --build
-
-# Database backup
-docker exec biocompute_postgres pg_dump -U myuser jobportal > backup.sql
+# Prisma Commands
+npx prisma studio       # Open Prisma Studio
+npx prisma generate     # Generate Prisma Client
+npx prisma migrate dev  # Create and apply migration
+npx prisma migrate deploy  # Deploy migrations (production)
 ```
 
 ### Access URLs
-- **Local:** http://localhost:8001
-- **Admin:** http://localhost:8001/admin/login
-- **API Jobs:** http://localhost:8001/api/jobs
-- **API Applications:** http://localhost:8001/api/applications
+
+**Local Development:**
+- App: http://localhost:3000
+- Admin: http://localhost:3000/admin/login
+- API: http://localhost:3000/api/jobs
+- Health: http://localhost:3000/api/health
+
+**Production (Render):**
+- App: https://your-app.onrender.com
+- Admin: https://your-app.onrender.com/admin/login
+- API: https://your-app.onrender.com/api/jobs
+
+### Default Credentials
+
+```
+Email: admin@biocompute.com
+Password: admin123
+```
+
+⚠️ **CHANGE THESE IN PRODUCTION!**
 
 ---
 
-## 💡 My Recommendation
+## 💰 Cost Breakdown
 
-**For your use case (can't run on your device all the time):**
+### Render + Supabase (Recommended)
 
-1. **Best Choice: Railway.app** ($5-15/month)
-   - Easiest setup (5 minutes)
-   - GitHub auto-deploy
-   - Managed PostgreSQL
-   - Free tier to start
-   - [Deploy Now →](https://railway.app)
+**Free Tier (Testing):**
+- Supabase: FREE (500MB database, 2GB transfer)
+- Render: FREE (spins down after inactivity)
+- Total: **$0/month**
 
-2. **Alternative: DigitalOcean App Platform** ($12/month)
-   - Very reliable
-   - Good documentation
-   - Managed database
-   - [Deploy Now →](https://www.digitalocean.com/products/app-platform)
+**Production Setup:**
+- Supabase Free: $0/month (sufficient for small apps)
+- Render Starter: $7/month (always on, 512MB RAM)
+- Total: **$7/month**
 
-3. **Budget Option: Oracle Cloud Free Tier** (FREE forever)
-   - Always free tier
-   - 24GB RAM free
-   - More complex setup
-   - [Sign Up →](https://www.oracle.com/cloud/free/)
+**Scaling Up:**
+- Supabase Pro: $25/month (8GB database, better performance)
+- Render Standard: $25/month (1GB RAM)
+- Total: **$50/month**
 
-**Start with Railway.app - you can deploy in under 10 minutes!**
+### Self-Hosted (VPS)
+
+**Basic VPS Options:**
+- DigitalOcean Droplet: $6/month (1GB RAM)
+- Linode: $5/month (1GB RAM)
+- Vultr: $6/month (1GB RAM)
+- Oracle Cloud: **FREE** forever (4GB RAM)
+
+**+ Supabase Free:** $0/month
+**Total: $5-6/month** (or FREE with Oracle Cloud)
 
 ---
 
-## 🎉 You're Ready!
+## 🎯 Recommended Setup
 
-Your application is production-ready. Choose a deployment option above and follow the steps. If you need help, refer to this guide or reach out for support.
+### For Testing/Development:
+**Use:** Render Free + Supabase Free
+- Cost: $0/month
+- Setup time: 15 minutes
+- Perfect for testing and demos
 
-**Good luck with your deployment! 🚀**
+### For Small Production (< 1000 users):
+**Use:** Render Starter + Supabase Free
+- Cost: $7/month
+- Always-on service
+- Sufficient for most small applications
+- Easy maintenance
+
+### For Growing Business (< 10,000 users):
+**Use:** Render Standard + Supabase Pro
+- Cost: $50/month
+- Better performance and reliability
+- Automatic backups (Supabase Pro)
+- 24/7 support
+
+### For Enterprise:
+**Use:** Custom setup with dedicated resources
+- Render Pro or custom deployment
+- Supabase Team/Enterprise
+- Custom SLAs and support
+
+---
+
+## 🎉 Deployment Checklist
+
+Before going live, ensure:
+
+- [ ] Supabase project created and database is accessible
+- [ ] All environment variables set in Render
+- [ ] Database migrations deployed successfully
+- [ ] Admin user seeded (run `npm run seed`)
+- [ ] Default admin password changed
+- [ ] Application accessible via HTTPS
+- [ ] Health check endpoint working (`/api/health`)
+- [ ] All API endpoints tested
+- [ ] Admin login working
+- [ ] Job creation and application submission tested
+- [ ] Database backups configured (for paid Supabase plans)
+- [ ] Monitoring set up (Render + Supabase dashboards)
+- [ ] Custom domain configured (optional)
+- [ ] SSL certificate active
+- [ ] Error tracking set up (optional: Sentry, etc.)
+
+---
+
+## 🆘 Getting Help
+
+### Documentation Links
+- [Render Documentation](https://render.com/docs)
+- [Supabase Documentation](https://supabase.com/docs)
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Prisma Documentation](https://www.prisma.io/docs)
+
+### Community Support
+- [Render Community](https://community.render.com)
+- [Supabase Discord](https://discord.supabase.com)
+- [Next.js Discussions](https://github.com/vercel/next.js/discussions) (maintained by Vercel but framework-agnostic)
+
+### Troubleshooting Steps
+1. Check application logs (Render dashboard)
+2. Verify environment variables
+3. Test database connection
+4. Review this troubleshooting section
+5. Check official documentation
+6. Search community forums
+7. Open support ticket (for paid plans)
+
+---
+
+## ✅ You're All Set!
+
+Congratulations! You now have a comprehensive guide to deploy and maintain your BioCompute Admin Portal using Render and Supabase.
+
+**Quick Start:** Jump to [Production Deployment](#production-deployment-render--supabase) to get your app live in 15 minutes!
+
+**Questions?** Review the [Troubleshooting](#troubleshooting) section or check the documentation links above.
+
+**Happy deploying! 🚀**
+
+---
+
+**Last Updated:** February 6, 2026  
+**Version:** 2.0 - Updated for Render + Supabase deployment
