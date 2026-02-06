@@ -1,9 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ['pg', '@prisma/client'],
-  },
+  // experimental: {
+  //   serverComponentsExternalPackages: ['pg', '@prisma/client'],
+  // },
 
   async headers() {
     return [
