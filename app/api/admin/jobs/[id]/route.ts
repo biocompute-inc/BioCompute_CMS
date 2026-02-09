@@ -46,12 +46,18 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
     try {
         const { id } = await params;
+
+        // Delete the job (applications will be cascade deleted)
         await prisma.job.delete({
             where: { id },
         });
 
         return NextResponse.json({ success: true });
-    } catch {
-        return NextResponse.json({ error: "Failed to delete job" }, { status: 500 });
+    } catch (error) {
+        console.error("Error deleting job:", error);
+        return NextResponse.json({
+            error: "Failed to delete job",
+            details: error instanceof Error ? error.message : "Unknown error"
+        }, { status: 500 });
     }
 }
